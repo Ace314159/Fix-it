@@ -9,7 +9,10 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -28,7 +31,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
-import android.widget.Button;
 import android.widget.ImageView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -71,7 +73,8 @@ import java.util.Map;
 
 public class Sites extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, ResultCallback<LocationSettingsResult>,
-        LocationListener, OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+        LocationListener, OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
+		SensorEventListener {
     static final int REQUEST_IMAGE_CAPTURE = 100;
     static final String TAG = "Fix-it!";
     static File sitePhoto;
@@ -79,7 +82,7 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
     static FirebaseStorage storage = FirebaseStorage.getInstance();
     static StorageReference storageRef = storage.getReferenceFromUrl("gs://fix-it-1.appspot.com");
     static FirebaseDatabase database = FirebaseDatabase.getInstance();
-    static DatabaseReference databaseRef = database.getReference("");
+    static DatabaseReference databaseRef = database.getReference("Sites");
     static Collection<Object> sites;
     static GoogleApiClient googleApiClient;
     static Location location;
@@ -90,25 +93,33 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
     String imageName;
     File image;
     Bitmap bit;
-    //static LocationManager locationManager;
     static boolean gpsOn;
     static boolean googlePlayServices;
     static boolean firstInit;
     static boolean imagesDownloaded;
-    //static FusedLocationProviderApi fusedLocationProviderApi = LocationServices.FusedLocationApi;
     static MapView mapView;
     static GoogleMap map;
+    private static final int SHAKE_THRESHOLD = 17; // m/S**2
+    private static final int MIN_TIME_BETWEEN_SHAKES_MILLISECS = 1000;
+    private long mLastShakeTime;
+    private SensorManager sensorMgr;
+    private boolean authenticated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		authenticated = ((App)getApplication()).isAuthenticated();
         firstInit = false;
         setContentView(R.layout.activity_sites);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        /*if (savedInstanceState != null) {
-            //photoUri = savedInstanceState.getParcelable("photoUri");
-        }*/
+
+        sensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        Sensor accelerometer = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if (accelerometer != null) {
+            sensorMgr.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        }
 
         googlePlayServices = isGooglePlayServicesAvailable();
 
@@ -245,13 +256,6 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
     }
 
     private File createImageFile() throws IOException {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 12);
-        }
-
-        //location = getLastKnownLocation(); //LocationServices.FusedLocationApi.getLastLocation(
-        //googleApiClient);
-
         ProgressDialog progress = new ProgressDialog(this);
         progress.setTitle("Obtaining Location");
         progress.setMessage("Please wait while we find your location...");
@@ -317,7 +321,6 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
         } else {
             for (Object imageName : sites) {
                 try {
-                    //StorageReference imageRef = storageRef.child(imageName.toString());
                     File image = new File(storageDir, imageName.toString());
                     if (!image.createNewFile()) {
                         new AlertDialog.Builder(Sites.this)
@@ -332,22 +335,6 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
                                 .setIcon(R.drawable.ic_warning)
                                 .show();
                     }
-                        /*imageRef.getFile(image).addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                new AlertDialog.Builder(Sites.this)
-                                        .setTitle("Could Not Download Files!")
-                                        .setMessage("Please check your internet connection and try again.")
-                                        .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                                            }
-                                        })
-                                        .setIcon(R.drawable.ic_warning)
-                                        .show();
-                            }
-                        });*/
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -503,8 +490,6 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
                         "upgrade location settings ");
 
                 try {
-                    // Show the dialog by calling startResolutionForResult(), and check the result
-                    // in onActivityResult().
                     status.startResolutionForResult(this, 0x1);
                 } catch (IntentSender.SendIntentException e) {
                     Log.i(TAG, "PendingIntent unable to execute request.");
@@ -542,26 +527,36 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
             LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
             googleApiClient.disconnect();
         }
+		sensorMgr.unregisterListener(this);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+		authenticated = ((App)getApplication()).isAuthenticated();
         mapView.onResume();
         googleApiClient.connect();
         if (googleApiClient.isConnected()) {
-            //LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
             startLocationUpdates();
         }
+		Sensor accelerometer = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		if (accelerometer != null) {
+			sensorMgr.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		}
     }
 
     protected void onStart() {
         googleApiClient.connect();
         super.onStart();
+		Sensor accelerometer = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		if (accelerometer != null) {
+			sensorMgr.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		}
     }
 
     protected void onStop() {
         googleApiClient.disconnect();
+		sensorMgr.unregisterListener(this);
         super.onStop();
     }
 
@@ -578,7 +573,6 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         mapView.onSaveInstanceState(outState);
-        //outState.putParcelable("photoUri", photoUri);
     }
 
     @Override
@@ -595,10 +589,11 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        imageName = marker.getTitle() + ".jpg";
-        downloadImage(marker.getPosition());
-
-        return true;
+		if(authenticated) {
+			imageName = marker.getTitle() + ".jpg";
+			downloadImage(marker.getPosition());
+		}
+		return true;
     }
 
     private void downloadImage(LatLng markerL) {
@@ -667,4 +662,31 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
             }
         });
     }
+
+	@Override public void onSensorChanged(SensorEvent event) {
+		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+			long curTime = System.currentTimeMillis();
+			if ((curTime - mLastShakeTime) > MIN_TIME_BETWEEN_SHAKES_MILLISECS) {
+
+				float x = event.values[0];
+				float y = event.values[1];
+				float z = event.values[2];
+
+				double acceleration = Math.sqrt(Math.pow(x, 2) +
+						Math.pow(y, 2) +
+						Math.pow(z, 2)) - SensorManager.GRAVITY_EARTH;
+
+				if (acceleration > SHAKE_THRESHOLD) {
+					mLastShakeTime = curTime;
+					if(!((App)getApplication()).isAuthenticated()) {
+						startActivity(new Intent(Sites.this, Authentication.class));
+					}
+				}
+			}
+		}
+	}
+
+	@Override public void onAccuracyChanged(Sensor sensor, int i) {
+
+	}
 }

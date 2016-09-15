@@ -4,25 +4,26 @@ import android.app.Application;
 import android.content.SharedPreferences;
 
 public class App extends Application {
-	private boolean authenticated;
+	private int authenticated;
+	private final String TAG = "Fix-it!";
 
-	public boolean isAuthenticated() {
+	public int isAuthenticated() {
 		return authenticated;
 	}
 
-	public void setAuthentication  (boolean a) {
+	public void setAuthentication  (int a) {
 		authenticated = a;
+	}
+
+	public String getTag() {
+		return TAG;
 	}
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		SharedPreferences preferences = getSharedPreferences("a", MODE_PRIVATE);
-		boolean b = preferences.getBoolean("b", false);
-		if(b) {
-			setAuthentication(true);
-		} else {
-			setAuthentication(false);
-		}
+		int b = preferences.getInt("b", 0);
+		setAuthentication(b);
 	}
 }

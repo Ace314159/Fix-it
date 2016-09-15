@@ -2,9 +2,9 @@ package ace.fixit;
 
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
@@ -18,16 +18,18 @@ import java.util.Map;
 import java.util.Set;
 
 public class Authentication extends AppCompatActivity {
-	private static final String TAG = Sites.TAG;
-	private EditText password;
-
 	static FirebaseDatabase database = FirebaseDatabase.getInstance();
 	static DatabaseReference databaseRef = database.getReference("Auth");
+	private static String TAG;
+	private static App app;
+	private EditText password;
 	private Collection<Object> auths;
 	private Set<String> keys;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		app = (App)getApplication();
+		TAG = app.getTag();
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_authentication);
 
@@ -67,32 +69,40 @@ public class Authentication extends AppCompatActivity {
 								i++;
 							}
 							if(valid) {
-								Log.i(TAG, "1");
-								AlertDialog dialog = new AlertDialog.Builder(Authentication.this)
+								SharedPreferences.Editor editor = getSharedPreferences("a", MODE_PRIVATE).edit();
+								editor.putInt("b", 1);
+								editor.apply();
+								app.setAuthentication(1);
+								new AlertDialog.Builder(Authentication.this)
 										.setTitle("Authenticated!")
 										.setMessage("You have been authenticated as a " + name)
 										.setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 											@Override
 											public void onClick(DialogInterface dialogInterface, int i) {
-												SharedPreferences.Editor editor = getSharedPreferences("a", MODE_PRIVATE).edit();
-												editor.putBoolean("b", true);
-												editor.apply();
-												((App) getApplication()).setAuthentication(true);
 												dialogInterface.dismiss();
 												finish();
 											}
 										})
-										.setIcon(R.drawable.ic_done).create();
+										.setIcon(R.drawable.ic_done).show();
 							} else {
 								SharedPreferences.Editor editor = getSharedPreferences("a", MODE_PRIVATE).edit();
-								editor.putBoolean("b", false);
+								editor.putInt("b", -1);
 								editor.apply();
-								((App) getApplication()).setAuthentication(false);
+								app.setAuthentication(-1);
 								finish();
 							}
 						}
 						return false;
 					}
 				});
+	}
+
+	@Override
+	public void onBackPressed() {
+		super.onBackPressed();
+		SharedPreferences.Editor editor = getSharedPreferences("a", MODE_PRIVATE).edit();
+		editor.putInt("b", -1);
+		editor.apply();
+		app.setAuthentication(-1);
 	}
 }

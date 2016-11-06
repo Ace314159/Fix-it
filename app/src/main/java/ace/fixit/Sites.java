@@ -70,6 +70,7 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 	private static final int MIN_TIME_BETWEEN_SHAKES_MILLISECS = 1000;
 	static App app;
 	static String TAG;
+    static Bundle SIS;
 	static File sitePhoto;
 	static String sitePhotoName = "";
 	static FirebaseStorage storage = FirebaseStorage.getInstance();
@@ -99,108 +100,118 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		app = (App) getApplication();
-		TAG = app.getTag();
-		authenticated = app.isAuthenticated();
-		firstInit = false;
-		setContentView(R.layout.activity_sites);
-		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-		setSupportActionBar(toolbar);
-
-		sensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
-
-		Sensor accelerometer = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		if(accelerometer != null) {
-			sensorMgr.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 12);
 		}
 
-		googlePlayServices = isGooglePlayServicesAvailable();
+        app = (App) getApplication();
+        TAG = app.getTag();
+        authenticated = app.isAuthenticated();
+        firstInit = false;
+        setContentView(R.layout.activity_sites);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-		if(googleApiClient == null) {
-			googleApiClient = new GoogleApiClient.Builder(this)
-					.addConnectionCallbacks(this)
-					.addOnConnectionFailedListener(this)
-					.addApi(LocationServices.API)
-					.build();
-		}
-		createLocationRequest();
-		buildLocationSettings();
-		checkLocationSettings();
-		mapView = (MapView) findViewById(R.id.map);
-		mapView.onCreate(savedInstanceState);
-		mapView.getMapAsync(this);
+        sensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
 
-		FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-		fab.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-				if(takePicture.resolveActivity(getPackageManager()) != null) {
-					File photoFile = null;
-					gpsOn = true;
-					try {
-						photoFile = createImageFile();
-					} catch(IOException e) {
-						new AlertDialog.Builder(Sites.this)
-								.setTitle("File Error")
-								.setMessage("Fix it! cannot save the image file. Please allow Fix it! to save files.")
-								.setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-									@Override
-									public void onClick(DialogInterface dialogInterface, int i) {
+        Sensor accelerometer = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if(accelerometer != null) {
+            sensorMgr.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        }
 
-									}
-								})
-								.setIcon(R.drawable.ic_warning)
-								.show();
+        googlePlayServices = isGooglePlayServicesAvailable();
 
-					}
-					if(photoFile != null) {
-						photoUri = FileProvider.getUriForFile(Sites.this, "ace.android.fileprovider", photoFile);
-						takePicture.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-						takePicture.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-						List<ResolveInfo> resInfoList = Sites.this.getPackageManager().queryIntentActivities(takePicture, PackageManager.MATCH_DEFAULT_ONLY);
-						for(ResolveInfo resolveInfo : resInfoList) {
-							String packageName = resolveInfo.activityInfo.packageName;
-							Sites.this.grantUriPermission(packageName, photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-						}
-						if(takePicture.resolveActivity(getPackageManager()) != null) {
-							startActivityForResult(takePicture, REQUEST_IMAGE_CAPTURE);
-						}
-					} else if(gpsOn) {
-						new AlertDialog.Builder(Sites.this)
-								.setTitle("Unexpected Error!")
-								.setMessage("Please make sure Fix it! can use your camera and try again.")
-								.setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-									@Override
-									public void onClick(DialogInterface dialogInterface, int i) {
-
-									}
-								})
-								.setIcon(R.drawable.ic_warning)
-								.show();
-					}
-				}
-			}
-		});
-
-		databaseRef.addValueEventListener(new ValueEventListener() {
-			@Override
-			public void onDataChange(DataSnapshot dataSnapshot) {
-				Map<String, Object> pl = (HashMap<String, Object>) dataSnapshot.getValue();
-				try {
-					sites = pl.values();
-				} catch(NullPointerException e) {
-					Log.i(TAG, "No sites!");
-				}
-				initMap();
-			}
-
-			@Override
-			public void onCancelled(DatabaseError databaseError) {
-				Log.i(TAG, "Database Error: " + databaseError.getCode());
-			}
-		});
+        if(googleApiClient == null) {
+            googleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+        mapView = (MapView) findViewById(R.id.map);
+        mapView.onCreate(SIS);
+        SIS = savedInstanceState;
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            create();
+        }
 	}
+
+    private void create() {
+        createLocationRequest();
+        buildLocationSettings();
+        checkLocationSettings();
+        mapView.getMapAsync(this);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if(takePicture.resolveActivity(getPackageManager()) != null) {
+                    File photoFile = null;
+                    gpsOn = true;
+                    try {
+                        photoFile = createImageFile();
+                    } catch(IOException e) {
+                        new AlertDialog.Builder(Sites.this)
+                                .setTitle("File Error")
+                                .setMessage("Fix it! cannot save the image file. Please allow Fix it! to save files.")
+                                .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                                    }
+                                })
+                                .setIcon(R.drawable.ic_warning)
+                                .show();
+
+                    }
+                    if(photoFile != null) {
+                        photoUri = FileProvider.getUriForFile(Sites.this, "ace.android.fileprovider", photoFile);
+                        takePicture.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                        takePicture.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        List<ResolveInfo> resInfoList = Sites.this.getPackageManager().queryIntentActivities(takePicture, PackageManager.MATCH_DEFAULT_ONLY);
+                        for(ResolveInfo resolveInfo : resInfoList) {
+                            String packageName = resolveInfo.activityInfo.packageName;
+                            Sites.this.grantUriPermission(packageName, photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
+                        if(takePicture.resolveActivity(getPackageManager()) != null) {
+                            startActivityForResult(takePicture, REQUEST_IMAGE_CAPTURE);
+                        }
+                    } else if(gpsOn) {
+                        new AlertDialog.Builder(Sites.this)
+                                .setTitle("Unexpected Error!")
+                                .setMessage("Please make sure Fix it! can use your camera and try again.")
+                                .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                                    }
+                                })
+                                .setIcon(R.drawable.ic_warning)
+                                .show();
+                    }
+                }
+            }
+        });
+
+        databaseRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Map<String, Object> pl = (HashMap<String, Object>) dataSnapshot.getValue();
+                try {
+                    sites = pl.values();
+                } catch(NullPointerException e) {
+                    Log.i(TAG, "No sites!");
+                }
+                initMap();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.i(TAG, "Database Error: " + databaseError.getCode());
+            }
+        });
+    }
 
 	private void initMap() {
 		downloadImages();
@@ -419,6 +430,15 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 		super.onActivityResult(requestCode, resultCode, data);
 	}
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == 12) {
+            if(grantResults[0] == 0) {
+                create();
+            }
+        }
+    }
+
 	private boolean isGooglePlayServicesAvailable() {
 		GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
 		int status = googleApiAvailability.isGooglePlayServicesAvailable(this);
@@ -497,16 +517,20 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 		if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 			ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 12);
 		}
-		LocationServices.FusedLocationApi.requestLocationUpdates(
-				googleApiClient,
-				locationRequest,
-				this
-		).setResultCallback(new ResultCallback<Status>() {
-			@Override
-			public void onResult(Status status) {
+        try {
+            LocationServices.FusedLocationApi.requestLocationUpdates(
+                    googleApiClient,
+                    locationRequest,
+                    this
+            ).setResultCallback(new ResultCallback<Status>() {
+                @Override
+                public void onResult(@NonNull Status status) {
 
-			}
-		});
+                }
+            });
+        } catch(NullPointerException e) {
+            e.printStackTrace();
+        }
 	}
 
 	@Override
@@ -528,7 +552,7 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 		mapView.onResume();
 		googleApiClient.connect();
 		if(googleApiClient.isConnected()) {
-			startLocationUpdates();
+            startLocationUpdates();
 		}
 		Sensor accelerometer = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		if(accelerometer != null) {

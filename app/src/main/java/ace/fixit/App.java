@@ -1,7 +1,11 @@
 package ace.fixit;
 
+import android.*;
 import android.app.Application;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 
 public class App extends Application {
 	private int authenticated;

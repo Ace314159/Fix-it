@@ -72,11 +72,11 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 	static String TAG;
     static Bundle SIS;
 	static File sitePhoto;
-	static String sitePhotoName = "";
+		static String sitePhotoName = "";
 	static FirebaseStorage storage = FirebaseStorage.getInstance();
 	static StorageReference storageRef = storage.getReferenceFromUrl("gs://fix-it-1.appspot.com");
 	static FirebaseDatabase database = FirebaseDatabase.getInstance();
-	static DatabaseReference databaseRef = database.getReference("Sites");
+	static DatabaseReference databaseRef = database.getReferenceFromUrl("https://fix-it-1.firebaseio.com/Sites");
 	static Collection<Object> sites;
 	static GoogleApiClient googleApiClient;
 	static Location location;
@@ -131,7 +131,7 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
         mapView = (MapView) findViewById(R.id.map);
         mapView.onCreate(SIS);
         SIS = savedInstanceState;
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             create();
         }
 	}
@@ -353,7 +353,7 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 				UploadTask uploadTask = imageRef.putFile(photoUri);
 				ProgressDialog progress = new ProgressDialog(Sites.this);
 				progress.setTitle("Uploading");
-				progress.setMessage("Please wait while your image is uploading...");
+				progress.setMessage("Please wait while your image is being uploaded...");
 				final ProgressDialog progressF = progress;
 				progressF.show();
 
@@ -380,7 +380,7 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 					public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
 						progressF.dismiss();
 						downloadUri = taskSnapshot.getDownloadUrl();
-						DatabaseReference dataRef = database.getReference(sitePhotoName.substring(0, sitePhotoName.lastIndexOf(".")).replace(".", "-"));
+						DatabaseReference dataRef = databaseRef.child(sitePhotoName.substring(0, sitePhotoName.lastIndexOf(".")).replace(".", "-"));
 						dataRef.setValue(sitePhotoName);
 						new AlertDialog.Builder(Sites.this)
 								.setTitle("Upload Successful!")
@@ -432,11 +432,16 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == 12) {
-            if(grantResults[0] == 0) {
-                create();
-            }
-        }
+		if(requestCode == 12) {
+			if(grantResults[0] == 0) {
+				if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+					ActivityCompat.requestPermissions(this, new String[]{ Manifest.permission.CAMERA }, 13);
+				}
+			}
+		}
+		if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+			create();
+		}
     }
 
 	private boolean isGooglePlayServicesAvailable() {
@@ -577,10 +582,12 @@ public class Sites extends AppCompatActivity implements GoogleApiClient.Connecti
 
 	@Override
 	public void onLocationChanged(Location l) {
-		firstInit = true;
 		double cLat = l.getLatitude();
 		double cLong = l.getLongitude();
-		map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(cLat, cLong)));
+		if(!firstInit) {
+			map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(cLat, cLong), 10));
+		}
+		firstInit = true;
 		location = l;
 	}
 

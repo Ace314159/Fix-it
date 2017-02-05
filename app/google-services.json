@@ -15,13 +15,41 @@
       },
       "oauth_client": [
         {
-          "client_id": "209123069029-bca0r1thnaumqkf95q862k3jvfk4uvr7.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "ace.fixit",
-            "certificate_hash": "5242D1E79B17D0E771668D6F8EF0B9548BD7622C"
-          }
+          "client_id": "209123069029-2gghndgdg6hve1b24na1g27ctm67imi6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBB2Jym5ntA0zucuZsYqTA8IA3QtiEnu9c"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
         },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "209123069029-2gghndgdg6hve1b24na1g27ctm67imi6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:209123069029:android:86641d81acd4ad60",
+        "android_client_info": {
+          "package_name": "ace.fix_it"
+        }
+      },
+      "oauth_client": [
         {
           "client_id": "209123069029-2gghndgdg6hve1b24na1g27ctm67imi6.apps.googleusercontent.com",
           "client_type": 3

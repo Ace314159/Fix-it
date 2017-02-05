@@ -1,19 +1,41 @@
 <resources>
-    <string name="app_name">Fix it!</string>
-    <string name="title_activity_sites">Fix it!</string>
-    <string name="title_activity_maps">Map</string>
-    <string name="title_activity_login">Sign in</string>
+    <string name="app_name">fix-it</string>
+    <string name="title_activity_main">Fix it!</string>
+    <string name="TAG">FIX-IT</string>
 
-    <!-- Strings related to login -->
-    <string name="prompt_email">Email</string>
-    <string name="prompt_password">Password (optional)</string>
-    <string name="action_sign_in">Sign in or register</string>
-    <string name="action_sign_in_short">Sign in</string>
-    <string name="error_invalid_email">This email address is invalid</string>
-    <string name="error_invalid_password">This password is too short</string>
-    <string name="error_incorrect_password">This password is incorrect</string>
-    <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for
-        providing email completions."
-    </string>
+
+    <string name="location_permission_denied_title">Location Permission Required!</string>
+    <string name="location_permission_denied_message">In order to use this app, your location must be accessed. Your location will only be used while you are using this app and will not be used in the background. We respect your privacy.</string>
+    <string name="location_permission_denied_button_text">@android:string/ok</string>
+
+    <string name="camera_permission_denied_title">Camera Permission Required!</string>
+    <string name="camera_permission_denied_message">In order to use this app, your camera must be accessed. Your camera will only be used when you take pictures in this app and will not be used in the background. We respect your privacy.</string>
+    <string name="camera_permission_denied_button_text">@android:string/ok</string>
+
+    <string name="location_and_camera_permission_denied_title">Location and Camera Permission Required!</string>
+    <string name="location_and_camera_permission_denied_message">In order to use this app, your camera and location must be accessed. Your location will only be used while you are using this app and will not be used in the background. Your camera will only be used when you take pictures in this app and will not be used in the background. We respect your privacy.</string>
+    <string name="location_and_camera_permission_denied_button_text">@android:string/ok</string>
+
+
+    <string name="problem_selection_pic_desc">The picture of the problem.</string>
+    <string name="problem_selection_title">Choose the Severity Rating (More stars means dangerous)</string>
+    <string name="problem_selection_positive_button_text">Confirm</string>
+    <string name="problem_selection_negative_button_text">Cancel</string>
+    <integer name="numStars">3</integer>
+
+    <string name="database_ref_dir">Problems</string>
+    <string name="storage_ref_dir">Problems</string>
+    <string name="firebase_url">gs://fix-it-1.appspot.com</string>
+
+    <string name="upload_fail_title">Upload Error!</string>
+    <string name="upload_fail_message">An unknown error has occurred.</string>
+    <string name="upload_fail_button_text">@android:string/ok</string>
+
+    <string name="upload_success_title">Upload Successful!</string>
+    <string name="upload_success_message">Your upload has successfully completed.</string>
+    <string name="upload_success_button_text">@android:string/ok</string>
+
+    <string name="location_error_title">Unknown Location Error Occurred</string>
+    <string name="location_error_message">Please Enable Location Services and make sure Fix it! can locate you and try again.</string>
+    <string name="location_error_positive_button">OK</string>
 </resources>

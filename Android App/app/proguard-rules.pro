@@ -17,6 +17,6 @@
 #}
 -keepattributes Signature
 
--keepclassmembers class ace.fix_it.firebasemodels {
+-keepclassmembers class ace.fix_it.firebasemodels.** {
   *;
 }

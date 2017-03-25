@@ -58,6 +58,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.UUID;
 
+import ace.fix_it.firebasemodels.Problem;
+
 public class MainAct extends FragmentActivity implements OnMapReadyCallback, ResultCallback<LocationSettingsResult>,
         LocationListener {
 
@@ -109,40 +111,6 @@ public class MainAct extends FragmentActivity implements OnMapReadyCallback, Res
         } else {
             init();
         }
-
-        problemsDataRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                System.out.println(1);
-                mMap.clear();
-                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                    HashMap<String, Object> h = (HashMap) postSnapshot.getValue();
-                    BitmapDescriptor b;
-                    switch (h.get("rating").toString()) {
-                        case "1":
-                            b = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-                            break;
-                        case "2":
-                            b = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
-                            break;
-                        case "3":
-                            b = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-                            break;
-                        default:
-                            b = BitmapDescriptorFactory.defaultMarker();
-                            break;
-                    }
-                    mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng((Double) h.get("lat"), (Double) h.get("llong")))
-                            .icon(b));
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
     }
 
     @Override
@@ -207,7 +175,44 @@ public class MainAct extends FragmentActivity implements OnMapReadyCallback, Res
         }
     }
 
+    public void initFirebaseListeners() {
+        problemsDataRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                mMap.clear();
+                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                    HashMap<String, Object> h = (HashMap) postSnapshot.getValue();
+                    BitmapDescriptor b;
+                    switch (h.get("rating").toString()) {
+                        case "1":
+                            b = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+                            break;
+                        case "2":
+                            b = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
+                            break;
+                        case "3":
+                            b = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                            break;
+                        default:
+                            b = BitmapDescriptorFactory.defaultMarker();
+                            break;
+                    }
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng((Double) h.get("lat"), (Double) h.get("llong")))
+                            .icon(b));
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
     public void init() {
+        initFirebaseListeners();
+
         createLocationRequest();
         buildLocationSettings();
         checkLocationSettings();

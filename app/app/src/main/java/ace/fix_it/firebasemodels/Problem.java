@@ -1,4 +1,4 @@
-package ace.fix_it;
+package ace.fix_it.firebasemodels;
 
 import com.google.firebase.database.IgnoreExtraProperties;
 

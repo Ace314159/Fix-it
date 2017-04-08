@@ -46,6 +46,20 @@ function initList() {
                     break;
             }
 
+            var infoWindowContentString = '';
+            var imageRef = images.child("Problems/" + val.id + ".jpg");
+            imageRef.getDownloadURL().then(function(url) {
+                var id = url.split("F").pop().split(".")[0];
+                infoWindows[id].setContent('<img src="' + url + '"/>');
+                if(prevInfoWindowID === id) {
+                    infoWindows[prevInfoWindowID].close();
+                    infoWindows[prevInfoWindowID].open(map, markers[prevInfoWindowID]);
+                }
+            });
+            var infoWindow = new google.maps.InfoWindow({
+                content: infoWindowContentString
+            });
+
             var marker = new google.maps.Marker({
                 position: latlng,
                 icon: ico,
@@ -53,11 +67,12 @@ function initList() {
             });
             marker.setMap(map);
             markers[val.id] = marker;
+            infoWindows[val.id] = infoWindow;
 
             marker.addListener("click", function() {
                 var id = "." + this.title;
                 $('#list').animate({
-                    scrollTop: $(id).offset().top
+                    scrollTop: $(id).offset().top - $("#list").offset().top + $("#list").scrollTop()
                 }, {
                     complete: function() {
                         $(id).effect("highlight", {color: "blue"}, 1450);
@@ -120,6 +135,8 @@ var loc;
 var loc_marker;
 var zoom = 18;
 var markers = {};
+var infoWindows = {};
+var prevInfoWindowID;
 
 
 function clearMarkers() {
@@ -127,6 +144,7 @@ function clearMarkers() {
         markers[i].setMap(null);
     }
     markers = {};
+    infoWindows = {};
 }
 
 function initMap(pos) {
@@ -155,7 +173,7 @@ function init() {
         }
     });
 
-    $("#list").on("click", "li", function() {
+    $("#list").on("click", "li", function(e) {
         var id = $(this).attr("class");
         map.panTo(markers[id].getPosition());
 
@@ -169,6 +187,15 @@ function init() {
         map.setZoom(zoom);
     });
 
+    $("#list").on("click", "img", function() {
+        var id = $(this).attr("id");
+        if(prevInfoWindowID !== undefined) {
+            infoWindows[prevInfoWindowID].close();
+        }
+        infoWindows[id].open(map, markers[id]);
+        prevInfoWindowID = id;
+    });
+
     $("#search_bar").on("focus", function() {
         this.select();
     });
@@ -180,6 +207,16 @@ function init() {
         }, function(err) {
             createDialog("Sign in Failed!", "An unkown error occurred. Please try again.", "");
         });
+    });
+
+    $(document).mousedown(function(e) {
+        console.log(1);
+        if(!$(e.target).is("img")) {
+            if(prevInfoWindowID !== undefined) {
+                infoWindows[prevInfoWindowID].close();
+                prevInfoWindowID = undefined;
+            }
+        }
     });
 
     var hyderabadBounds = new google.maps.LatLngBounds(
